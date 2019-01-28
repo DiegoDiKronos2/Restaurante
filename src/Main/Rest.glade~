@@ -609,6 +609,7 @@
                                 <property name="margin_bottom">20</property>
                               </object>
                               <packing>
+                                <property name="x">10</property>
                                 <property name="y">80</property>
                               </packing>
                             </child>

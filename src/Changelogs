@@ -1,0 +1,11 @@
+
+Changelog - 28/1/19
+
+- Rediseño casi total de la interfaz
+	- Sustituido el menubar por una toolbar, el label que indica el camarero se ha movido ahí, añadido un botón para cambiar de camarero.
+	- Añadidos imagenes para los botones de "Mesas","Servicios","Facturas","Cambiar de camarero", "Añadir", "Modificar" y "Borrar" clientes.
+	- Las pestañas del notebook ahora están en oculto y se cambia entre ellas mediante una toolbar.
+	- Aumentado el tamaño de toda la interfaz para acomodar mejor el espacio al trabajar en 1080p.
+	- La lista de los clientes y la opción de añadir/editar ya existentes se han movido a otro notebook gestionado por botones.
+	- Modificados los margenes para ajustar mejor el espacio en pantalla.
+

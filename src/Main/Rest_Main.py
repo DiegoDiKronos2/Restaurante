@@ -37,8 +37,8 @@ class Restaurante:
         self.LB_Check = Gra.get_object("LB_LogCheck")
         self.LB_MS = Gra.get_object("LB_MS")
         #Otros
-        self.NB_Principal = Gra.get_object("NB_PRINCIPAL")
-        self.NB = Gra.get_object("NB_Menus")
+        self.NB_Principal = Gra.get_object("NB_Menus")
+        self.NB_Clientes = Gra.get_object("NB_Clientes")
         self.TreeMesas = Gra.get_object("Tree_Mesas")
         self.ListMesas = Gra.get_object("ListMesas")
         #Variables globales
@@ -48,6 +48,16 @@ class Restaurante:
         ################ SALIDAS ##################################
                 'on_VP_destroy': self.salir,
                 'on_BT_LOGIN_EXIT_clicked': self.salir,
+                'on_TB_Salir_clicked': self.salir,
+        ################# CONTROL DE PESTAÑAS ####################
+                'on_TB_Mesas_clicked': self.Mesas,
+                'on_TB_Servicios_clicked': self.Servicios,
+                'on_TB_Facturas_clicked': self.Facturas,
+                'on_TB_ChangeUser_clicked': self.ReLogin,
+                'on_BT_Añadir_clicked': self.AddWindow,
+                'on_BT_Modificar_clicked': self.ModUser,
+                'on_BT_Eliminar_clicked': self.DelUser,
+                'on_BT_FinalBack_clicked': self.BackToList,
         ################# BOTONES DE LAS MESAS ####################
                 'on_BT_MesaP1_clicked': self.Mesa1,
                 'on_BT_MesaP2_clicked': self.Mesa2,
@@ -61,13 +71,13 @@ class Restaurante:
                 'on_BT_MOccuped_clicked': self.Occupped,
                 'on_Tree_Mesas_cursor_changed': self.SelToDis,
                 'on_BT_MFree_clicked': self.Disocupped,
-                'on_BT_ToSocios_activate': self.Socios,
         ################ LOGIN ####################
                 'on_BT_LS_Login_clicked': self.Login,
                 }
         
         Gra.connect_signals(dic)
         self.VP.show()
+        self.VP.fullscreen()
         self.LoadMesas()
         self.LS.show()
         
@@ -75,20 +85,35 @@ class Restaurante:
     def salir(self, widget, data=None):
         BD_Conect.Disconect()
         Gtk.main_quit()
+    def ReLogin(self,widget,data=None):
+        self.LS.show()
     def Login(self, widget,data=None):
         Log = (self.ET_User.get_text(),self.ET_Pass.get_text())
         Res = BD_Conect.LogCompr(Log)
         for Row in Res:
-            self.LB_Check.set_text("Logeado como: "+Row[1]) # Establece el label que indica el nombre del camarero logeado
+            self.LB_Check.set_text(" Logeado como: \n "+Row[1]) # Establece el label que indica el nombre del camarero logeado
             self.CamID = Row[0] # Guarda su ID para futuros usos sin necesidad de hacer mas busquedas
             if Row[0] != None:
                 self.LS.hide()
         self.LB_LE.set_text("Usuario o contraseña incorrectos")
-
+    
+    ####### Control de pestañas ########
+    #Los siguientes metodos simplemente modifican la pestaña activa del "notebook"
+    def Mesas(self, widget,data=None):
+        self.NB_Principal.set_current_page(0)
+    def Servicios(self, widget,data=None):
+        self.NB_Principal.set_current_page(1)
+    def Facturas(self, widget,data=None):
+        self.NB_Principal.set_current_page(2)
+    def AddWindow(self,widget,data=None):
+        self.NB_Clientes.set_current_page(1)
+    def BackToList(self,widget,data=None):
+        self.NB_Clientes.set_current_page(0)
+    #### Carga del treeview y del estado de las mesas ####
     def LoadMesas(self):
         ### Limpiamos la lista actual del treeview
         self.ListMesas.clear()
-        ID = self.NB.get_current_page()
+        ID = self.NB_Principal.get_current_page()
         ### Obtenemos una lista de todas las mesas y su estado.
         Res = BD_Conect.Load(ID)
         ### Para cada mesa comprobamos si está ocupada, en ese caso el botón cambio de imagen y se bloquea
@@ -157,8 +182,6 @@ class Restaurante:
             fila = (i[0],i[1],i[2])
             BD_Conect.AltaLista(self.TreeMesas, self.ListMesas, fila)
     
-    def Socios(self,widget,data=None):
-        self.NB_Principal.set_tab_pos(1)
     ################# Métodos de las mesas ###################
     ### Cada método cambia la variable "Selected" y el Lable que indica cúal está seleccionada
     def Mesa1(self, widget, data=None):
@@ -187,7 +210,7 @@ class Restaurante:
         self.Selected = 8
         
     ################### Métodos principales #########################
-    
+    ### Apartado de mesas y reservas ###
     def Occupped(self, widget, data=None):
         if self.Selected == 0:# Si la variable de seleccion está a 0 es que no se ha presionado ningún botón de mesa.
             self.LB_MS.set_text("Debe seleccionar una mesa primero")
@@ -211,7 +234,11 @@ class Restaurante:
             ID = model.get_value(iter, 0) # Cogemos la ID de la mesa de la tabla
             BD_Conect.Disocupped(ID) #Se cambia el estado de la columna "Ocupada" de la base de datos para la mesa seleccionada
         self.LoadMesas()
-    
+    ### Apartado de clientes ###
+    def ModUser(self,widget,data=None):
+        self.NB_Clientes.set_tab_pos(1)
+    def DelUser(self,widget,data=None):
+        a = 0
 if __name__ == '__main__':
     main = Restaurante()
     Gtk.main()
