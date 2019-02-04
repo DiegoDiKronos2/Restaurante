@@ -1,7 +1,7 @@
 
 import gi
 import re
-from Main import BD_Conect
+from Main import BD_Conect, BD_Prov
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -23,6 +23,10 @@ class Restaurante:
         self.BT_Mesa6 = Gra.get_object("BT_Mesa6")
         self.BT_Mesa7 = Gra.get_object("BT_Mesa7")
         self.BT_Mesa8 = Gra.get_object("BT_Mesa8")
+        #Botones de clientes
+        self.BT_AddC = Gra.get_object("BT_FinalAdd")
+        self.BT_ModC = Gra.get_object("BT_Modificar")
+        self.BT_DelC = Gra.get_object("BT_Eliminar")
         #Imágenes de mesas
         self.IMG_Mesa1 = Gra.get_object("Mesa1")
         self.IMG_Mesa2 = Gra.get_object("Mesa2")
@@ -36,11 +40,25 @@ class Restaurante:
         self.LB_LE = Gra.get_object("LB_LOGIN_ERROR")
         self.LB_Check = Gra.get_object("LB_LogCheck")
         self.LB_MS = Gra.get_object("LB_MS")
+        #EntryBox
+        self.EB_SearchC = Gra.get_object("EB_SearchU")
+        self.EB_C_DNI = Gra.get_object("EB_C_DNI")
+        self.EB_C_Nombre = Gra.get_object("EB_C_Nombre")
+        self.EB_C_Apellidos = Gra.get_object("EB_C_Apellidos")
+        self.EB_C_Direccion = Gra.get_object("EB_C_Direccion")
+        #ComboBox
+        self.CB_C_Provincia = Gra.get_object("CB_C_Provincia")
+        self.CB_C_Ciudad = Gra.get_object("CB_C_Ciudad")
         #Otros
         self.NB_Principal = Gra.get_object("NB_Menus")
         self.NB_Clientes = Gra.get_object("NB_Clientes")
+        #Trees&Lists
         self.TreeMesas = Gra.get_object("Tree_Mesas")
         self.ListMesas = Gra.get_object("ListMesas")
+        self.TreeClientes = Gra.get_object("TR_Clientes")
+        self.ListClientes = Gra.get_object("LS_Clientes")
+        self.ListPro = Gra.get_object("ListProvincias")
+        self.ListCiu = Gra.get_object("ListCiudad")
         #Variables globales
         self.Selected = 0 #Mesa seleccionada
         self.CamID = 0 #ID del camarero logeado
@@ -71,22 +89,33 @@ class Restaurante:
                 'on_BT_MOccuped_clicked': self.Occupped,
                 'on_Tree_Mesas_cursor_changed': self.SelToDis,
                 'on_BT_MFree_clicked': self.Disocupped,
+        ################ BT Clientes #################
+                'on_BT_FinalAdd_clicked': self.AñadirCliente,
         ################ LOGIN ####################
                 'on_BT_LS_Login_clicked': self.Login,
+                'on_ET_LS_Passwd_key_press_event': self.KeyLoggin,
+        ################ OTROS ####################
+                'on_EB_SearchU_key_press_event': self.KeySearch,
+                'on_CB_C_Provincia_changed': self.LoadCBCiu,
                 }
         
         Gra.connect_signals(dic)
         self.VP.show()
         self.VP.fullscreen()
         self.LoadMesas()
+        self.LoadClientes()
+        self.LoadCBPro()
         self.LS.show()
         
-    
     def salir(self, widget, data=None):
         BD_Conect.Disconect()
         Gtk.main_quit()
+    #### LOGINS ####
     def ReLogin(self,widget,data=None):
         self.LS.show()
+    def KeyLoggin(self,widget,event):
+        if event.keyval == 65293:
+            self.Login(widget)
     def Login(self, widget,data=None):
         Log = (self.ET_User.get_text(),self.ET_Pass.get_text())
         Res = BD_Conect.LogCompr(Log)
@@ -109,6 +138,8 @@ class Restaurante:
         self.NB_Clientes.set_current_page(1)
     def BackToList(self,widget,data=None):
         self.NB_Clientes.set_current_page(0)
+        
+    #################### Cargas de los treeviews y las listas ###########################
     #### Carga del treeview y del estado de las mesas ####
     def LoadMesas(self):
         ### Limpiamos la lista actual del treeview
@@ -181,9 +212,21 @@ class Restaurante:
         for i in ResOcuped:
             fila = (i[0],i[1],i[2])
             BD_Conect.AltaLista(self.TreeMesas, self.ListMesas, fila)
-    
+    #### Carga del tree view de clientes ####
+    def LoadClientes(self):
+        ### Limpiamos la lista actual del treeview
+        self.ListClientes.clear()
+        ResCli = BD_Conect.LoadCli()
+        for i in ResCli:
+            fila = (i[0],i[1],i[2])
+            BD_Conect.AltaLista(self.TreeClientes, self.ListClientes, fila)
+    def LoadCBPro(self):
+        BD_Prov.Load(self.ListPro)
+    def LoadCBCiu(self,widget,data=None):
+        BD_Prov.LoadCiu(self.ListCiu,self.CB_C_Provincia.get_active())
+            
     ################# Métodos de las mesas ###################
-    ### Cada método cambia la variable "Selected" y el Lable que indica cúal está seleccionada
+    ### Cada método cambia la variable "Selected" y el Label que indica cúal está seleccionada
     def Mesa1(self, widget, data=None):
         self.LB_MS.set_text("Mesa: 1 - 6 Comensales")
         self.Selected = 1
@@ -209,9 +252,15 @@ class Restaurante:
         self.LB_MS.set_text("Mesa: 8 - 10 Comensales")
         self.Selected = 8
         
+        
     ################### Métodos principales #########################
-    ### Apartado de mesas y reservas ###
+    
+        ### Apartado de mesas y reservas ###
     def Occupped(self, widget, data=None):
+        """Ocupación de mesas
+        
+        Este método se encarga del estado de las mesas cuando se oprime el botón de 'Ocupar'
+        """
         if self.Selected == 0:# Si la variable de seleccion está a 0 es que no se ha presionado ningún botón de mesa.
             self.LB_MS.set_text("Debe seleccionar una mesa primero")
         elif self.Selected == -1:# Si está a -1 es que se ha seleccionado una mesa ocupada del tree view
@@ -221,7 +270,11 @@ class Restaurante:
             BD_Conect.Ocupped(self.Selected)
         self.LoadMesas()
     
-    def SelToDis(self, widget, data=None):# Señal del tree view para seleccionar una mesa ocupada.
+    def SelToDis(self, widget, data=None):
+        """Seleccionar para desocupar
+        
+        Este método permite seleccionar una mesa de la lista de ocupadas para liberarla.
+        """
         model, iter = self.TreeMesas.get_selection().get_selected()
         if iter != None:
             ID = model.get_value(iter, 0) # Cogemos la ID de la mesa de la tabla
@@ -234,11 +287,40 @@ class Restaurante:
             ID = model.get_value(iter, 0) # Cogemos la ID de la mesa de la tabla
             BD_Conect.Disocupped(ID) #Se cambia el estado de la columna "Ocupada" de la base de datos para la mesa seleccionada
         self.LoadMesas()
-    ### Apartado de clientes ###
+    
+    ##### Apartado de clientes #####
+    
+    def AñadirCliente(self,widget,data=None):
+        fila = (self.EB_C_DNI.get_text(),self.EB_C_Apellidos.get_text(),self.EB_C_Nombre.get_text(),self.EB_C_Direccion.get_text(),self.ListPro.get_value(self.CB_C_Provincia.get_active_iter(),0),self.ListCiu.get_value(self.CB_C_Ciudad.get_active_iter(),0))
+        BD_Conect.Insert(fila, 0)
+        self.LoadClientes()
+        self.NB_Clientes.set_current_page(0)
+    
     def ModUser(self,widget,data=None):
-        self.NB_Clientes.set_tab_pos(1)
+        Model, ID = self.TreeClientes.get_selection().get_selected()
+        ResC = BD_Conect.FindClient(self.ListClientes.get_value(ID,0))
+        for i in ResC:
+            fila = (i[0],i[1],i[2],i[3],i[4],i[5])
+        
+        self.EB_C_DNI.set_text(fila[0])
+        self.EB_C_Apellidos.set_text(fila[1])
+        self.EB_C_Nombre.set_text(fila[2])
+        self.EB_C_Direccion.set_text(fila[3])
+        
+        self.NB_Clientes.set_current_page(1)
+        
     def DelUser(self,widget,data=None):
         a = 0
+    def KeySearch(self,widget,event):
+        """Búsqueda rápida por apellido
+        
+        Mientras se escriba en la EntryBox del apartado de clientes cada vez que se teclee se realizará una búsqueda de los clientes mediante su apellido
+        """
+        ResCli = BD_Conect.SearchCli(self.EB_SearchC.get_text())
+        self.ListClientes.clear()
+        for i in ResCli:
+            fila = (i[0],i[1],i[2])
+            BD_Conect.AltaLista(self.TreeClientes, self.ListClientes, fila)
 if __name__ == '__main__':
     main = Restaurante()
     Gtk.main()

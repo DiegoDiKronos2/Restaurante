@@ -12,21 +12,49 @@ except sqlite3.OperationalError as e:
 
 ############################# Métodos de carga de datos ############################
 def LogCompr(Log):
-    Curs.execute("SELECT * FROM Camarero WHERE (Nombre = ?) AND (Contraseña = ?)",(Log[0],Log[1]))
+    try:
+        Curs.execute("SELECT * FROM Camarero WHERE (Nombre = ?) AND (Contraseña = ?)",(Log[0],Log[1]))
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
     return Curs
+
 def Load(ID):
     #Carga de datos
-    if ID == 0:
-        Curs.execute("SELECT * FROM Mesa")
-    elif ID == 1:
-        Curs.execute("SELECT * FROM Reparaciones")
-    elif ID == 2:
-        Curs.execute("SELECT * FROM Facturaciones")
-    
+    try:
+        if ID == 0:
+            Curs.execute("SELECT * FROM Mesa")
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
     return Curs
+
+def LoadCli():
+    try:
+        Curs.execute("SELECT * FROM Cliente")
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
+    return Curs
+
 def LoadOccuped():
     try:
         Curs.execute("SELECT * FROM Mesa WHERE (Ocupada = 'Si')")
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
+    return Curs
+
+def SearchCli(TEXT):
+    try:
+        Curs.execute("SELECT * FROM Cliente WHERE Apellidos like '"+TEXT+"%'")
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
+    return Curs
+def FindClient(DNI):
+    try:
+        Curs.execute("SELECT * FROM Cliente WHERE DNI ="+DNI+"")
     except sqlite3.OperationalError as e:
         print(e)
         Cone.rollback()
@@ -36,26 +64,8 @@ def Insert(fila, ID):
     
     if ID == 0:
         try:
-            Curs.execute("INSERT INTO Clientes (DNI,Nombre,Apellidos,Matricula,Telefono,EMail,Fecha)"
-                         +" VALUES (?,?,?,?,?,?,?)",fila)
-            Cone.commit()
-    
-        except sqlite3.OperationalError as e:
-            print(e)
-            Cone.rollback()
-    elif ID == 1:
-        try:
-            Curs.execute("INSERT INTO Reparaciones (ManObra,Matricula,Aceite,Neumaticos,Ruedas,Bateria,Filtros)"
-                         +" VALUES (?,?,?,?,?,?,?)",fila)
-            Cone.commit()
-    
-        except sqlite3.OperationalError as e:
-            print(e)
-            Cone.rollback()
-    elif ID == 2:
-        try:
-            Curs.execute("INSERT INTO Facturaciones (Fecha,Matricula)"
-                         +" VALUES (?,?)",fila)
+            Curs.execute("INSERT INTO Cliente (DNI,Apellidos,Nombre,Direccion,Provincia,Ciudad)"
+                         +" VALUES (?,?,?,?,?,?)",fila)
             Cone.commit()
     
         except sqlite3.OperationalError as e:
@@ -77,30 +87,13 @@ def Disocupped(ID):
     except sqlite3.OperationalError as e:
         print(e)
         Cone.rollback()
+        
 def Modificar(fila,ID):
     if ID == 0:
         try:
             Curs.execute("UPDATE CLIENTES "
                     "SET Nombre=?,Apellidos=?,Matricula=?,Telefono=?,EMail=?,Fecha=?"
                     "WHERE DNI=?", (fila[1],fila[2],fila[3],fila[4],fila[5],fila[6],fila[0]))
-            Cone.commit()
-        except sqlite3.OperationalError as e:
-            print(e)
-            Cone.rollback()
-    elif ID == 1:
-        try:
-            Curs.execute("UPDATE REPARACIONES "
-                         "SET ManObra=?,Matricula=?,Aceite=?,Neumaticos=?,Ruedas=?,Bateria=?,Filtros=?"
-                         "WHERE NFacturacion=?", (fila[1],fila[2],fila[3],fila[4],fila[5],fila[6],fila[7],fila[0]))
-            Cone.commit()
-        except sqlite3.OperationalError as e:
-            print(e)
-            Cone.rollback()
-    elif ID == 2:
-        try:
-            Curs.execute("UPDATE FACTURACIONES "
-                         "SET Matricula=?,Fecha=? "
-                         "WHERE IDFact=?", (fila[1],fila[2],fila[0]))
             Cone.commit()
         except sqlite3.OperationalError as e:
             print(e)
@@ -129,20 +122,6 @@ def Del(Reference,ID):##Eliminar bajo referencia
         except sqlite3.OperationalError as e:
             print(e)
             Cone.rollback()
-    elif ID == 1:
-        try:
-            Curs.execute("DELETE FROM Reparaciones WHERE (NFacturacion = ?)",(Reference,))
-            Cone.commit()
-        except sqlite3.OperationalError as e:
-            print(e)
-            Cone.rollback()
-    elif ID == 2:
-        try:
-            Curs.execute("DELETE FROM Facturaciones WHERE (IDFact = ?)",(Reference,))
-            Cone.commit()
-        except sqlite3.OperationalError as e:
-            print(e)
-            Cone.rollback()
             
 def DROPALL():##Elimina todo el contenido de la BBDD
     try:
@@ -157,17 +136,6 @@ def DROPALL():##Elimina todo el contenido de la BBDD
             Cone.rollback()
 
 ############################# Métodos de adicionales ############################
-
-def validoMatricula(Mat): ##Comprueba que ya existe el cliente en la BBDD 
-    Curs.execute("SELECT DNI FROM Clientes WHERE (Matricula = ?)",(Mat,))
-    Cone.commit()
-    Comp = ""
-    for i in Curs:
-        Comp = i[0]
-    if Comp != "":
-        return True
-    else:
-        return False
 
 def AltaLista(Tree,Lista,fila): ##Actualiza la lista mostrada en la interfaz
     Lista.append(fila)
