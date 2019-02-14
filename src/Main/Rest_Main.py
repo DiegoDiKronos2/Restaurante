@@ -12,6 +12,8 @@ class Restaurante:
         #Ventanas
         self.VP = Gra.get_object("VP")
         self.LS = Gra.get_object("LoginScreen")
+        self.VT_Conf = Gra.get_object("VT_Confirmation")
+        self.VService = Gra.get_object("V_AddService")
         self.ET_User = Gra.get_object("ET_LS_User")
         self.ET_Pass = Gra.get_object("ET_LS_Passwd")
         #Botones de Mesas
@@ -40,28 +42,53 @@ class Restaurante:
         self.LB_LE = Gra.get_object("LB_LOGIN_ERROR")
         self.LB_Check = Gra.get_object("LB_LogCheck")
         self.LB_MS = Gra.get_object("LB_MS")
+        self.LB_Confirm = Gra.get_object("LB_Confirm")
         #EntryBox
         self.EB_SearchC = Gra.get_object("EB_SearchU")
         self.EB_C_DNI = Gra.get_object("EB_C_DNI")
         self.EB_C_Nombre = Gra.get_object("EB_C_Nombre")
         self.EB_C_Apellidos = Gra.get_object("EB_C_Apellidos")
         self.EB_C_Direccion = Gra.get_object("EB_C_Direccion")
+        self.EB_NSN = Gra.get_object("EB_AddSN")
+        self.EB_NSP = Gra.get_object("EB_AddSP")
+        self.EB_S_Selected = Gra.get_object("EB_S_MS")
+        self.EB_S_Camarero = Gra.get_object("EB_S_Cam")
+        self.EB_S_Cliente = Gra.get_object("EB_S_Cli")
+        self.EB_S_CosteTotal = Gra.get_object("EB_S_CT")
+        self.EB_S_Searcher = Gra.get_object("EB_S_Searcher")
         #ComboBox
         self.CB_C_Provincia = Gra.get_object("CB_C_Provincia")
         self.CB_C_Ciudad = Gra.get_object("CB_C_Ciudad")
         #Otros
         self.NB_Principal = Gra.get_object("NB_Menus")
         self.NB_Clientes = Gra.get_object("NB_Clientes")
-        #Trees&Lists
+        self.CA_Fecha = Gra.get_object("Calendar")
+        #Trees
         self.TreeMesas = Gra.get_object("Tree_Mesas")
-        self.ListMesas = Gra.get_object("ListMesas")
         self.TreeClientes = Gra.get_object("TR_Clientes")
+        self.TreeServicios = Gra.get_object("TreeServicios")
+        self.TreeFactsLite = Gra.get_object("Tree_Facts_S")
+        self.TreeSM = Gra.get_object("Tree_Mesas_S")
+        self.TreeSFM = Gra.get_object("TreeS_F_M")
+        #Lists
+        self.ListMesas = Gra.get_object("ListMesas")
+        self.ListServicios = Gra.get_object("ListServ")
+        self.ListFactsLite = Gra.get_object("ListFactsLite")
         self.ListClientes = Gra.get_object("LS_Clientes")
+        self.ListSFM = Gra.get_object("ListS_F_M")
         self.ListPro = Gra.get_object("ListProvincias")
         self.ListCiu = Gra.get_object("ListCiudad")
         #Variables globales
         self.Selected = 0 #Mesa seleccionada
+        self.ServiceSelected = 0
+        self.CursorSelected = False
+        self.CursorServicesSelected = False
+        self.CursorFactLiteSlected = False
         self.CamID = 0 #ID del camarero logeado
+        self.ID_Confirm = 0
+        #ID de la alerta que necesita confirmación
+        ## 0 - Null
+        ## 1 - Borrado de cliente
         dic = {
         ################ SALIDAS ##################################
                 'on_VP_destroy': self.salir,
@@ -73,7 +100,6 @@ class Restaurante:
                 'on_TB_Facturas_clicked': self.Facturas,
                 'on_TB_ChangeUser_clicked': self.ReLogin,
                 'on_BT_Añadir_clicked': self.AddWindow,
-                'on_BT_Modificar_clicked': self.ModUser,
                 'on_BT_Eliminar_clicked': self.DelUser,
                 'on_BT_FinalBack_clicked': self.BackToList,
         ################# BOTONES DE LAS MESAS ####################
@@ -89,6 +115,14 @@ class Restaurante:
                 'on_BT_MOccuped_clicked': self.Occupped,
                 'on_Tree_Mesas_cursor_changed': self.SelToDis,
                 'on_BT_MFree_clicked': self.Disocupped,
+                'on_BT_Conf_YES_clicked': self.ConfYES,
+                'on_BT_Conf_NO_clicked': self.ConfNO,
+        ################ Añadir servicios ########################
+                'on_BT_NewService_clicked': self.NewService,
+                'on_BT_AddNS_clicked': self.AddNewService,
+                'on_BT_CancelNS_clicked':self.CancelAddNewService,
+                'on_BT_AddS_clicked': self.BuyService,
+                'on_BT_CancelS_clicked': self.DelService,
         ################ BT Clientes #################
                 'on_BT_FinalAdd_clicked': self.AñadirCliente,
         ################ LOGIN ####################
@@ -97,6 +131,11 @@ class Restaurante:
         ################ OTROS ####################
                 'on_EB_SearchU_key_press_event': self.KeySearch,
                 'on_CB_C_Provincia_changed': self.LoadCBCiu,
+                'on_TR_Clientes_cursor_changed': self.CursorSelection,
+                'on_Tree_Mesas_S_cursor_changed': self.SFactsReload,
+                'on_Tree_Facts_S_cursor_changed': self.FactsLiteLoad,
+                'on_TreeServicios_cursor_changed': self.ServieCursorSelection,
+                'on_EB_S_Searcher_button_release_event': self.ServiceSearch,
                 }
         
         Gra.connect_signals(dic)
@@ -125,12 +164,48 @@ class Restaurante:
             if Row[0] != None:
                 self.LS.hide()
         self.LB_LE.set_text("Usuario o contraseña incorrectos")
+        
+    def ConfirmationRequested(self):
+        if self.ID_Confirm == 1:
+            self.LB_Confirm.set_text("¿Está seguro de que quiere borrar a este cliente?")
+        self.VT_Conf.show
+    def ConfYES(self,widget,data=None):
+        if self.ID_Confirm == 1:
+            Model, ID = self.TreeClientes.get_selection().get_selected()
+            ResC = BD_Conect.DelClient(self.ListClientes.get_value(ID,0))
+            self.LoadClientes()
+        self.VT_Conf.hide()
+    def ConfNO(self,widget,data=None):
+        self.VT_Conf.hide()
+        self.ID_Confirm = 0
     
+    def CursorSelection(self,widget,data=None):
+        self.CursorSelected = True
+    def ServieCursorSelection(self,widget,data=None):
+        self.CursorServicesSelected = True
     ####### Control de pestañas ########
     #Los siguientes metodos simplemente modifican la pestaña activa del "notebook"
     def Mesas(self, widget,data=None):
+        self.LoadMesas()
+        self.LoadClientes()
+        self.CursorSelected = False
+        self.Selected = 0
         self.NB_Principal.set_current_page(0)
     def Servicios(self, widget,data=None):
+        self.LoadS()
+        self.LoadMesas()
+        self.ServiceSelected = 0
+        Res = BD_Conect.Load(3)
+        self.ListFactsLite.clear()
+        for i in Res:
+            file = (i[0],i[1],i[4])
+            BD_Conect.AltaLista(self.TreeFactsLite, self.ListFactsLite, file)
+        self.EB_S_Selected.set_text("")
+        self.EB_S_Camarero.set_text("")
+        self.EB_S_Cliente.set_text("")
+        self.EB_S_CosteTotal.set_text("")
+        self.CursorServicesSelected = False
+        self.CursorFactLiteSlected = False
         self.NB_Principal.set_current_page(1)
     def Facturas(self, widget,data=None):
         self.NB_Principal.set_current_page(2)
@@ -144,9 +219,8 @@ class Restaurante:
     def LoadMesas(self):
         ### Limpiamos la lista actual del treeview
         self.ListMesas.clear()
-        ID = self.NB_Principal.get_current_page()
         ### Obtenemos una lista de todas las mesas y su estado.
-        Res = BD_Conect.Load(ID)
+        Res = BD_Conect.Load(0)
         ### Para cada mesa comprobamos si está ocupada, en ese caso el botón cambio de imagen y se bloquea
         ### Si no está ocupada el botón se desbloquea y la imágen vuelve a la de disponible
         for i in Res:
@@ -216,7 +290,7 @@ class Restaurante:
     def LoadClientes(self):
         ### Limpiamos la lista actual del treeview
         self.ListClientes.clear()
-        ResCli = BD_Conect.LoadCli()
+        ResCli = BD_Conect.Load(1)
         for i in ResCli:
             fila = (i[0],i[1],i[2])
             BD_Conect.AltaLista(self.TreeClientes, self.ListClientes, fila)
@@ -224,7 +298,47 @@ class Restaurante:
         BD_Prov.Load(self.ListPro)
     def LoadCBCiu(self,widget,data=None):
         BD_Prov.LoadCiu(self.ListCiu,self.CB_C_Provincia.get_active())
-            
+        
+    def LoadS(self):
+        self.ListServicios.clear()
+        Res = BD_Conect.Load(2)
+        for i in Res:
+            fila = (i[1],str(i[2]),i[0])
+            BD_Conect.AltaLista(self.TreeServicios, self.ListServicios, fila)
+    def SFactsReload(self,widget,data=None):
+        self.ListFactsLite.clear()
+        model, iter = self.TreeSM.get_selection().get_selected()
+        ID = model.get_value(iter,0)
+        Res = BD_Conect.LoadFactLite(ID)
+        for i in Res:
+            file = (i[0],i[1],i[4])
+            BD_Conect.AltaLista(self.TreeFactsLite, self.ListFactsLite, file)
+    def FactsLiteLoad(self,widget,data=None):
+        self.CursorFactLiteSlected = True
+        model, iter = self.TreeFactsLite.get_selection().get_selected()
+        ID = model.get_value(iter,0)
+        Res1 = BD_Conect.LoadOnService(ID)
+        for i in Res1:
+            DatosFactura = (i[0],i[1],i[2])
+        self.ServiceSelected = DatosFactura[0]
+        if self.ServiceSelected > 0 and self.ServiceSelected <= 4:
+            Com = " - 6 Comensales"
+        elif self.ServiceSelected > 4 and self.ServiceSelected <= 5:
+            Com = " - 8 Comensales"
+        elif self.ServiceSelected > 5:
+            Com = " - 10 Comensales"
+        self.EB_S_Selected.set_text("Mesa: "+str(self.ServiceSelected)+Com)
+        self.EB_S_Camarero.set_text(DatosFactura[1])
+        self.EB_S_Cliente.set_text(DatosFactura[2])
+        Total = 0
+        self.ListSFM.clear()
+        Res = BD_Conect.LoadLF(ID)
+        for i in Res:
+            file = (str(i[0]),str(i[1]),str(i[2]))
+            Total = Total + i[1]*i[2]
+            BD_Conect.AltaLista(self.TreeSFM, self.ListSFM, file)
+        self.EB_S_CosteTotal.set_text(str(Total)+"€")
+        
     ################# Métodos de las mesas ###################
     ### Cada método cambia la variable "Selected" y el Label que indica cúal está seleccionada
     def Mesa1(self, widget, data=None):
@@ -266,8 +380,15 @@ class Restaurante:
         elif self.Selected == -1:# Si está a -1 es que se ha seleccionado una mesa ocupada del tree view
             self.LB_MS.set_text("Esa mesa ya estaba ocupada")
         elif self.Selected > 0:
-            # Se cambia el estado de la columna "Ocupada" de la base de datos para la mesa seleccionada
-            BD_Conect.Ocupped(self.Selected)
+            if self.CursorSelected == False:
+                self.LB_MS.set_text("Tiene que seleccionar un cliente primero")
+            else:
+                Model, ID = self.TreeClientes.get_selection().get_selected()
+                Año, Mes, Dia = self.CA_Fecha.get_date()
+                Fecha = str(Año)+"-"+str(Mes)+"-"+str(Dia)
+                fila = (self.Selected, self.ListClientes.get_value(ID,0),self.CamID,Fecha)
+                BD_Conect.Ocupped(fila)
+            
         self.LoadMesas()
     
     def SelToDis(self, widget, data=None):
@@ -295,22 +416,11 @@ class Restaurante:
         BD_Conect.Insert(fila, 0)
         self.LoadClientes()
         self.NB_Clientes.set_current_page(0)
-    
-    def ModUser(self,widget,data=None):
-        Model, ID = self.TreeClientes.get_selection().get_selected()
-        ResC = BD_Conect.FindClient(self.ListClientes.get_value(ID,0))
-        for i in ResC:
-            fila = (i[0],i[1],i[2],i[3],i[4],i[5])
-        
-        self.EB_C_DNI.set_text(fila[0])
-        self.EB_C_Apellidos.set_text(fila[1])
-        self.EB_C_Nombre.set_text(fila[2])
-        self.EB_C_Direccion.set_text(fila[3])
-        
-        self.NB_Clientes.set_current_page(1)
         
     def DelUser(self,widget,data=None):
-        a = 0
+        self.ID_Confirm = 1
+        self.ConfirmationRequested()
+        
     def KeySearch(self,widget,event):
         """Búsqueda rápida por apellido
         
@@ -321,6 +431,60 @@ class Restaurante:
         for i in ResCli:
             fila = (i[0],i[1],i[2])
             BD_Conect.AltaLista(self.TreeClientes, self.ListClientes, fila)
+            
+    ###### Servicios #######
+    def NewService(self,widget,data=None):
+        self.EB_NSN.set_text("")
+        self.EB_NSP.set_text("")
+        self.VService.show()
+    def CancelAddNewService(self,widget,data=None):
+        self.VService.hide()
+    def AddNewService(self,widget,data=None):
+        fila = (self.EB_NSN.get_text(),self.EB_NSP.get_text())
+        BD_Conect.Insert(fila, 1)
+        self.LoadS()
+        self.VService.hide()
+    def BuyService(self,widget,data=None):
+        if self.CursorFactLiteSlected == True:
+            if self.CursorServicesSelected == True:
+                model, iter = self.TreeFactsLite.get_selection().get_selected()
+                IDF = model.get_value(iter,0)
+        
+                model, iter = self.TreeServicios.get_selection().get_selected()
+                IDS = model.get_value(iter,2)
+                
+                BD_Conect.InsertSF(IDF, IDS)
+                self.ListSFM.clear()
+                Res = BD_Conect.LoadLF(IDF)
+                for i in Res:
+                    file = (str(i[0]),str(i[1]),str(i[2]))
+                    BD_Conect.AltaLista(self.TreeSFM, self.ListSFM, file)
+            else:
+                a = 1
+        else:
+            placeholder = 1
+            
+    def DelService(self,widget,data=None):
+        model, iter = self.TreeFactsLite.get_selection().get_selected()
+        IDF = model.get_value(iter,0)
+        
+        model, iter = self.TreeSFM.get_selection().get_selected()
+        IDS = model.get_value(iter,0)
+                
+        BD_Conect.DelLF(IDF, IDS)
+        self.ListSFM.clear()
+        Res = BD_Conect.LoadLF(IDF)
+        for i in Res:
+            file = (str(i[0]),str(i[1]),str(i[2]))
+            BD_Conect.AltaLista(self.TreeSFM, self.ListSFM, file)
+            
+    def ServiceSearch(self,widget,data=None):
+        self.ListServicios.clear()
+        Res = BD_Conect.SearchService(self.EB_S_Searcher.get_text())
+        for i in Res:
+            fila = (i[1],str(i[2]),i[0])
+            BD_Conect.AltaLista(self.TreeServicios, self.ListServicios, fila)
+    
 if __name__ == '__main__':
     main = Restaurante()
     Gtk.main()

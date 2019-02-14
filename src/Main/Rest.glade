@@ -2,10 +2,27 @@
 <!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
+  <object class="GtkImage" id="AddService">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-media-rewind</property>
+    <property name="icon_size">5</property>
+  </object>
+  <object class="GtkImage" id="CancelService">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-media-forward</property>
+    <property name="icon_size">5</property>
+  </object>
   <object class="GtkImage" id="ChangeUser">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="pixbuf">../IMG/changeUser60.png</property>
+  </object>
+  <object class="GtkImage" id="DelService">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="pixbuf">../IMG/delservice.png</property>
   </object>
   <object class="GtkImage" id="DelUser">
     <property name="visible">True</property>
@@ -38,6 +55,16 @@
       <column type="gchararray"/>
     </columns>
   </object>
+  <object class="GtkListStore" id="ListFactsLite">
+    <columns>
+      <!-- column-name Numero -->
+      <column type="gint"/>
+      <!-- column-name DNI -->
+      <column type="gchararray"/>
+      <!-- column-name Fecha -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
   <object class="GtkListStore" id="ListMesas">
     <columns>
       <!-- column-name IDMesa -->
@@ -52,6 +79,26 @@
     <columns>
       <!-- column-name Provincia -->
       <column type="gchararray"/>
+    </columns>
+  </object>
+  <object class="GtkListStore" id="ListS_F_M">
+    <columns>
+      <!-- column-name Producto -->
+      <column type="gchararray"/>
+      <!-- column-name Precio -->
+      <column type="gchararray"/>
+      <!-- column-name Cantidad -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
+  <object class="GtkListStore" id="ListServ">
+    <columns>
+      <!-- column-name Producto -->
+      <column type="gchararray"/>
+      <!-- column-name Precio/Ud -->
+      <column type="gchararray"/>
+      <!-- column-name ID -->
+      <column type="gint"/>
     </columns>
   </object>
   <object class="GtkImage" id="Mesa1">
@@ -99,10 +146,10 @@
     <property name="can_focus">False</property>
     <property name="pixbuf">../IMG/mesas60.png</property>
   </object>
-  <object class="GtkImage" id="ModUser">
+  <object class="GtkImage" id="NewService">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="pixbuf">../IMG/ModUser40.png</property>
+    <property name="pixbuf">../IMG/addservice.png</property>
   </object>
   <object class="GtkImage" id="NewUser">
     <property name="visible">True</property>
@@ -496,7 +543,6 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="margin_top">20</property>
-                        <property name="margin_bottom">200</property>
                         <property name="shadow_type">in</property>
                         <child>
                           <object class="GtkTreeView" id="Tree_Mesas">
@@ -537,6 +583,24 @@
                         <property name="expand">True</property>
                         <property name="fill">True</property>
                         <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkCalendar" id="Calendar">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="margin_top">45</property>
+                        <property name="margin_bottom">45</property>
+                        <property name="year">2019</property>
+                        <property name="month">1</property>
+                        <property name="day">6</property>
+                        <property name="detail_width_chars">100</property>
+                        <property name="detail_height_rows">100</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
                       </packing>
                     </child>
                   </object>
@@ -581,22 +645,6 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="BT_Modificar">
-                                <property name="width_request">40</property>
-                                <property name="height_request">40</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                                <property name="tooltip_text" translatable="yes">Modificar usuario</property>
-                                <property name="image">ModUser</property>
-                                <signal name="clicked" handler="on_BT_Modificar_clicked" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="x">80</property>
-                                <property name="y">15</property>
-                              </packing>
-                            </child>
-                            <child>
                               <object class="GtkButton" id="BT_Eliminar">
                                 <property name="width_request">40</property>
                                 <property name="height_request">40</property>
@@ -608,7 +656,7 @@
                                 <signal name="clicked" handler="on_BT_Eliminar_clicked" swapped="no"/>
                               </object>
                               <packing>
-                                <property name="x">145</property>
+                                <property name="x">80</property>
                                 <property name="y">15</property>
                               </packing>
                             </child>
@@ -646,6 +694,7 @@
                                 <property name="can_focus">True</property>
                                 <property name="model">LS_Clientes</property>
                                 <property name="search_column">0</property>
+                                <signal name="cursor-changed" handler="on_TR_Clientes_cursor_changed" swapped="no"/>
                                 <child internal-child="selection">
                                   <object class="GtkTreeSelection"/>
                                 </child>
@@ -959,7 +1008,519 @@
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkFixed">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="margin_right">20</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="width_request">200</property>
+                        <property name="height_request">40</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Mesa seleccionada:</property>
+                        <attributes>
+                          <attribute name="size" value="15000"/>
+                        </attributes>
+                      </object>
+                      <packing>
+                        <property name="x">40</property>
+                        <property name="y">50</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="BT_NewService">
+                        <property name="width_request">60</property>
+                        <property name="height_request">60</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="image">NewService</property>
+                        <signal name="clicked" handler="on_BT_NewService_clicked" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="x">45</property>
+                        <property name="y">670</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="BT_DelService">
+                        <property name="width_request">20</property>
+                        <property name="height_request">20</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="image">DelService</property>
+                        <property name="always_show_image">True</property>
+                      </object>
+                      <packing>
+                        <property name="x">125</property>
+                        <property name="y">670</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="width_request">122</property>
+                        <property name="height_request">80</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Camarero:</property>
+                        <attributes>
+                          <attribute name="size" value="15000"/>
+                        </attributes>
+                      </object>
+                      <packing>
+                        <property name="x">40</property>
+                        <property name="y">95</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="width_request">100</property>
+                        <property name="height_request">80</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Cliente:</property>
+                        <attributes>
+                          <attribute name="size" value="15000"/>
+                        </attributes>
+                      </object>
+                      <packing>
+                        <property name="x">40</property>
+                        <property name="y">160</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="EB_S_Cam">
+                        <property name="width_request">200</property>
+                        <property name="height_request">40</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="editable">False</property>
+                      </object>
+                      <packing>
+                        <property name="x">250</property>
+                        <property name="y">115</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="EB_S_Cli">
+                        <property name="width_request">200</property>
+                        <property name="height_request">40</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="editable">False</property>
+                      </object>
+                      <packing>
+                        <property name="x">250</property>
+                        <property name="y">180</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="width_request">105</property>
+                        <property name="height_request">80</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Coste total:</property>
+                        <attributes>
+                          <attribute name="size" value="15000"/>
+                        </attributes>
+                      </object>
+                      <packing>
+                        <property name="x">56</property>
+                        <property name="y">225</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="EB_S_CT">
+                        <property name="width_request">200</property>
+                        <property name="height_request">40</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="editable">False</property>
+                      </object>
+                      <packing>
+                        <property name="x">250</property>
+                        <property name="y">245</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="width_request">201</property>
+                        <property name="height_request">40</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Total de servicios disponibles:</property>
+                      </object>
+                      <packing>
+                        <property name="x">45</property>
+                        <property name="y">740</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="LB_S_Total">
+                        <property name="width_request">100</property>
+                        <property name="height_request">40</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                      </object>
+                      <packing>
+                        <property name="x">250</property>
+                        <property name="y">740</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="EB_S_MS">
+                        <property name="width_request">200</property>
+                        <property name="height_request">40</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="editable">False</property>
+                      </object>
+                      <packing>
+                        <property name="x">250</property>
+                        <property name="y">50</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="width_request">228</property>
+                        <property name="height_request">345</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="shadow_type">in</property>
+                        <child>
+                          <object class="GtkTreeView" id="Tree_Facts_S">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="model">ListFactsLite</property>
+                            <signal name="cursor-changed" handler="on_Tree_Facts_S_cursor_changed" swapped="no"/>
+                            <child internal-child="selection">
+                              <object class="GtkTreeSelection"/>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">Nº</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="N_Factura"/>
+                                  <attributes>
+                                    <attribute name="text">0</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">DNI</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="DNI"/>
+                                  <attributes>
+                                    <attribute name="text">1</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">Fecha</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="Fecha"/>
+                                  <attributes>
+                                    <attribute name="text">2</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="x">221</property>
+                        <property name="y">320</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="width_request">150</property>
+                        <property name="height_request">345</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="shadow_type">in</property>
+                        <child>
+                          <object class="GtkTreeView" id="Tree_Mesas_S">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="model">ListMesas</property>
+                            <property name="search_column">0</property>
+                            <signal name="cursor-changed" handler="on_Tree_Mesas_S_cursor_changed" swapped="no"/>
+                            <child internal-child="selection">
+                              <object class="GtkTreeSelection"/>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">Mesa</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="IDMesa_Text1"/>
+                                  <attributes>
+                                    <attribute name="text">0</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">Comensales</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="Comen_Text1"/>
+                                  <attributes>
+                                    <attribute name="text">1</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="x">56</property>
+                        <property name="y">320</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="margin_bottom">60</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkFixed">
+                        <property name="height_request">60</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="shadow_type">in</property>
+                        <child>
+                          <object class="GtkTreeView" id="TreeS_F_M">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="model">ListS_F_M</property>
+                            <property name="search_column">0</property>
+                            <child internal-child="selection">
+                              <object class="GtkTreeSelection"/>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">Producto</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="ID_Prod"/>
+                                  <attributes>
+                                    <attribute name="text">0</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">Precio</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="ID_Prec"/>
+                                  <attributes>
+                                    <attribute name="text">1</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">Cantidad</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="ID_Cant"/>
+                                  <attributes>
+                                    <attribute name="text">2</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFixed">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkButton" id="BT_CancelS">
+                        <property name="width_request">60</property>
+                        <property name="height_request">60</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Eliminar de la factura</property>
+                        <property name="image">CancelService</property>
+                        <property name="image_position">top</property>
+                        <property name="always_show_image">True</property>
+                        <signal name="clicked" handler="on_BT_CancelS_clicked" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="y">420</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="BT_AddS">
+                        <property name="width_request">20</property>
+                        <property name="height_request">20</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="image">AddService</property>
+                        <signal name="clicked" handler="on_BT_AddS_clicked" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="y">240</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="margin_right">40</property>
+                    <property name="margin_bottom">60</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkFixed">
+                        <property name="height_request">60</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkEntry" id="EB_S_Searcher">
+                            <property name="width_request">322</property>
+                            <property name="height_request">40</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="placeholder_text" translatable="yes">Buscador</property>
+                            <signal name="key-release-event" handler="on_EB_S_Searcher_button_release_event" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="y">10</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="shadow_type">in</property>
+                        <child>
+                          <object class="GtkTreeView" id="TreeServicios">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="model">ListServ</property>
+                            <property name="search_column">0</property>
+                            <signal name="cursor-changed" handler="on_TreeServicios_cursor_changed" swapped="no"/>
+                            <child internal-child="selection">
+                              <object class="GtkTreeSelection"/>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">Producto</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="Producto"/>
+                                  <attributes>
+                                    <attribute name="text">0</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">Precio/Ud</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="PUd"/>
+                                  <attributes>
+                                    <attribute name="text">1</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn">
+                                <property name="title" translatable="yes">ID</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="ID2"/>
+                                  <attributes>
+                                    <attribute name="text">2</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="position">1</property>
+              </packing>
             </child>
             <child type="tab">
               <object class="GtkLabel">
@@ -1120,6 +1681,212 @@
               <packing>
                 <property name="x">49</property>
                 <property name="y">121</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkDialog" id="VT_Confirmation">
+    <property name="can_focus">False</property>
+    <property name="title" translatable="yes">Confirmación</property>
+    <property name="resizable">False</property>
+    <property name="modal">True</property>
+    <property name="window_position">center</property>
+    <property name="type_hint">dialog</property>
+    <property name="deletable">False</property>
+    <property name="transient_for">VP</property>
+    <child>
+      <placeholder/>
+    </child>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can_focus">False</property>
+            <property name="homogeneous">True</property>
+            <property name="layout_style">center</property>
+            <child>
+              <object class="GtkButton" id="BT_Conf_YES">
+                <property name="label" translatable="yes">Sí</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_BT_Conf_YES_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="BT_Conf_NO">
+                <property name="label" translatable="yes">No</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_BT_Conf_NO_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkFixed">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkLabel" id="LB_Confirm">
+                <property name="width_request">180</property>
+                <property name="height_request">100</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">20</property>
+                <property name="margin_right">20</property>
+                <property name="margin_top">20</property>
+                <property name="margin_bottom">20</property>
+                <property name="label" translatable="yes">_PLACEHOLDER_</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkDialog" id="V_AddService">
+    <property name="can_focus">False</property>
+    <property name="resizable">False</property>
+    <property name="modal">True</property>
+    <property name="window_position">center</property>
+    <property name="type_hint">dialog</property>
+    <property name="deletable">False</property>
+    <property name="transient_for">VP</property>
+    <child>
+      <placeholder/>
+    </child>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can_focus">False</property>
+            <property name="layout_style">center</property>
+            <child>
+              <object class="GtkButton" id="BT_AddNS">
+                <property name="label" translatable="yes">Añadir</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_BT_AddNS_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="BT_CancelNS">
+                <property name="label" translatable="yes">Cancelar</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <signal name="clicked" handler="on_BT_CancelNS_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkFixed">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_left">20</property>
+            <property name="margin_right">20</property>
+            <property name="margin_bottom">10</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="width_request">100</property>
+                <property name="height_request">80</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Servicio:</property>
+              </object>
+              <packing>
+                <property name="x">13</property>
+                <property name="y">12</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="width_request">100</property>
+                <property name="height_request">80</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Precio:</property>
+              </object>
+              <packing>
+                <property name="x">9</property>
+                <property name="y">75</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="EB_AddSN">
+                <property name="width_request">200</property>
+                <property name="height_request">40</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+              </object>
+              <packing>
+                <property name="x">120</property>
+                <property name="y">30</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="EB_AddSP">
+                <property name="width_request">200</property>
+                <property name="height_request">40</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+              </object>
+              <packing>
+                <property name="x">120</property>
+                <property name="y">94</property>
               </packing>
             </child>
           </object>
