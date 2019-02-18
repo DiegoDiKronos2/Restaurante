@@ -56,6 +56,7 @@ class Restaurante:
         self.EB_S_Cliente = Gra.get_object("EB_S_Cli")
         self.EB_S_CosteTotal = Gra.get_object("EB_S_CT")
         self.EB_S_Searcher = Gra.get_object("EB_S_Searcher")
+        self.EB_F_ClientSearcher = Gra.get_object("EB_F_ClientSearch")
         #ComboBox
         self.CB_C_Provincia = Gra.get_object("CB_C_Provincia")
         self.CB_C_Ciudad = Gra.get_object("CB_C_Ciudad")
@@ -70,6 +71,9 @@ class Restaurante:
         self.TreeFactsLite = Gra.get_object("Tree_Facts_S")
         self.TreeSM = Gra.get_object("Tree_Mesas_S")
         self.TreeSFM = Gra.get_object("TreeS_F_M")
+        self.TreeF_Cliente = Gra.get_object("Tree_F_Clientes")
+        self.TreeF_Factura = Gra.get_object("Tree_F_Facturas")
+        self.Tree_F_Mesas = Gra.get_object("Tree_Mesas_F")
         #Lists
         self.ListMesas = Gra.get_object("ListMesas")
         self.ListServicios = Gra.get_object("ListServ")
@@ -78,6 +82,8 @@ class Restaurante:
         self.ListSFM = Gra.get_object("ListS_F_M")
         self.ListPro = Gra.get_object("ListProvincias")
         self.ListCiu = Gra.get_object("ListCiudad")
+        self.ListF_Cliente = Gra.get_object("List_F_Clientes")
+        self.ListF_Factura = Gra.get_object("List_F_Facturas")
         #Variables globales
         self.Selected = 0 #Mesa seleccionada
         self.ServiceSelected = 0
@@ -133,9 +139,11 @@ class Restaurante:
                 'on_CB_C_Provincia_changed': self.LoadCBCiu,
                 'on_TR_Clientes_cursor_changed': self.CursorSelection,
                 'on_Tree_Mesas_S_cursor_changed': self.SFactsReload,
+                'on_Tree_Mesas_F_cursor_changed': self.FFactsReload,
                 'on_Tree_Facts_S_cursor_changed': self.FactsLiteLoad,
                 'on_TreeServicios_cursor_changed': self.ServieCursorSelection,
                 'on_EB_S_Searcher_button_release_event': self.ServiceSearch,
+                'on_EB_F_ClientSearch_key_release_event': self.FCliSearch,
                 }
         
         Gra.connect_signals(dic)
@@ -208,6 +216,18 @@ class Restaurante:
         self.CursorFactLiteSlected = False
         self.NB_Principal.set_current_page(1)
     def Facturas(self, widget,data=None):
+        self.LoadMesas()
+        self.ListF_Cliente.clear()
+        Res = BD_Conect.Load(1)
+        for i in Res:
+            fila = (i[0],i[1],i[2],i[3],i[4],i[5])
+            BD_Conect.AltaLista(self.TreeF_Cliente, self.ListF_Cliente, fila)
+        self.ListF_Factura.clear()
+        Res = BD_Conect.Load(4)
+        for i in Res:
+            fila = (i[0],i[1],i[2],i[3],i[4])
+            BD_Conect.AltaLista(self.TreeF_Factura, self.ListF_Factura, fila)
+        
         self.NB_Principal.set_current_page(2)
     def AddWindow(self,widget,data=None):
         self.NB_Clientes.set_current_page(1)
@@ -338,7 +358,16 @@ class Restaurante:
             Total = Total + i[1]*i[2]
             BD_Conect.AltaLista(self.TreeSFM, self.ListSFM, file)
         self.EB_S_CosteTotal.set_text(str(Total)+"€")
-        
+            
+    def FFactsReload(self,widget,data=None):
+        self.ListF_Factura.clear()
+        model, iter = self.Tree_F_Mesas.get_selection().get_selected()
+        ID = model.get_value(iter,0)
+        Res = BD_Conect.LoadFactFilter(ID)
+        for i in Res:
+            file = (i[0],i[1],i[2],i[3],i[4])
+            BD_Conect.AltaLista(self.TreeF_Factura, self.ListF_Factura, file)
+    
     ################# Métodos de las mesas ###################
     ### Cada método cambia la variable "Selected" y el Label que indica cúal está seleccionada
     def Mesa1(self, widget, data=None):
@@ -456,9 +485,12 @@ class Restaurante:
                 BD_Conect.InsertSF(IDF, IDS)
                 self.ListSFM.clear()
                 Res = BD_Conect.LoadLF(IDF)
+                Total = 0
                 for i in Res:
                     file = (str(i[0]),str(i[1]),str(i[2]))
+                    Total = Total + i[1]*i[2]
                     BD_Conect.AltaLista(self.TreeSFM, self.ListSFM, file)
+                self.EB_S_CosteTotal.set_text(str(Total)+"€")
             else:
                 a = 1
         else:
@@ -474,9 +506,12 @@ class Restaurante:
         BD_Conect.DelLF(IDF, IDS)
         self.ListSFM.clear()
         Res = BD_Conect.LoadLF(IDF)
+        Total = 0
         for i in Res:
             file = (str(i[0]),str(i[1]),str(i[2]))
+            Total = Total + i[1]*i[2]
             BD_Conect.AltaLista(self.TreeSFM, self.ListSFM, file)
+        self.EB_S_CosteTotal.set_text(str(Total)+"€")
             
     def ServiceSearch(self,widget,data=None):
         self.ListServicios.clear()
@@ -484,6 +519,13 @@ class Restaurante:
         for i in Res:
             fila = (i[1],str(i[2]),i[0])
             BD_Conect.AltaLista(self.TreeServicios, self.ListServicios, fila)
+    
+    def FCliSearch(self,widget,data=None):
+        ResCli = BD_Conect.SearchCli(self.EB_F_ClientSearcher.get_text())
+        self.ListF_Cliente.clear()
+        for i in ResCli:
+            fila = (i[0],i[1],i[2],i[3],i[4],i[5])
+            BD_Conect.AltaLista(self.TreeF_Cliente, self.ListF_Cliente, fila)
     
 if __name__ == '__main__':
     main = Restaurante()

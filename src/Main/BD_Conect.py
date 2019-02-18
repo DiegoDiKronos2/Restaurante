@@ -30,6 +30,15 @@ def Load(ID):
             Curs.execute("SELECT * FROM Servicio")
         elif ID == 3:
             Curs.execute("SELECT * FROM Factura")
+        elif ID == 4:
+            Curs.execute("SELECT F.IDFact,F.DNICliente,C.Nombre,F.IDMesa,F.Fecha FROM Factura AS F INNER JOIN Camarero AS C ON F.IDCam = C.IDCam")
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
+    return Curs
+def LoadFactFilter(IDMesa):
+    try:
+        Curs.execute("SELECT F.IDFact,F.DNICliente,C.Nombre,F.IDMesa,F.Fecha FROM Factura AS F INNER JOIN Camarero AS C ON F.IDCam = C.IDCam WHERE IDMesa = '"+str(IDMesa)+"'")
     except sqlite3.OperationalError as e:
         print(e)
         Cone.rollback()
@@ -98,6 +107,7 @@ def Insert(fila, ID):
     except sqlite3.OperationalError as e:
         print(e)
         Cone.rollback()
+        
 def InsertSF(IDF,IDS):
     try:
         IDF = str(IDF)
@@ -144,20 +154,23 @@ def DelClient(DNI):
         print(e)
         Cone.rollback()
     return Curs.fetchall()
+
 def DelLF(IDF,IDS):
     try:
         IDF = str(IDF)
         IDS = str(IDS)
-        Curs.execute("SELECT * FROM LineaFactura WHERE IDFactura = "+IDF+" AND IDServicio = "+IDS) ##Cambiar consulta
+        Curs.execute("SELECT LF.IDVenta,LF.Cantidad FROM LineaFactura AS LF "+
+                     "INNER JOIN Servicio AS S ON S.IDServicio = LF.IDServicio "+
+                     "INNER JOIN Factura AS F ON LF.IDFactura = F.IDFact "+
+                     "WHERE S.Servicio = '"+IDS+"' AND F.IDFact = "+IDF)
         data = 0
         for i in Curs:
-            data = i[3]
-        if data >= 2:
-            Curs.execute("UPDATE LineaFactura SET Cantidad = "+str(data-1)+" WHERE IDFactura = "+IDF+" AND IDServicio = "+IDS)
+            data = i[0],i[1]
+        if data[1] >= 2:
+            Curs.execute("UPDATE LineaFactura SET Cantidad = "+str(data[1]-1)+" WHERE IDVenta = "+str(data[0]))
             Cone.commit()
         else:
-            fila = (IDF,IDS,"1")
-            Curs.execute("DELETE FROM LineaFactura WHERE IDFactura = "+IDF+" AND IDServicio = "+IDS)
+            Curs.execute("DELETE FROM LineaFactura WHERE IDVenta = "+str(data[0]))
             Cone.commit()
     except sqlite3.OperationalError as e:
         print(e)
@@ -166,10 +179,6 @@ def DelLF(IDF,IDS):
 def DROPALL():##Elimina todo el contenido de la BBDD
     try:
             Curs.execute("DELETE FROM Clientes")
-            Cone.commit()
-            Curs.execute("DELETE FROM Reparaciones")
-            Cone.commit()
-            Curs.execute("DELETE FROM Facturaciones")
             Cone.commit()
     except sqlite3.OperationalError as e:
             print(e)
