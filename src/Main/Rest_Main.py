@@ -1,6 +1,9 @@
 
 import gi
 import re
+import locale
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 from Main import BD_Conect, BD_Prov
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
@@ -144,6 +147,7 @@ class Restaurante:
                 'on_TreeServicios_cursor_changed': self.ServieCursorSelection,
                 'on_EB_S_Searcher_button_release_event': self.ServiceSearch,
                 'on_EB_F_ClientSearch_key_release_event': self.FCliSearch,
+                'on_BT_Factura_clicked': self.FacturaCompleta,
                 }
         
         Gra.connect_signals(dic)
@@ -526,7 +530,75 @@ class Restaurante:
         for i in ResCli:
             fila = (i[0],i[1],i[2],i[3],i[4],i[5])
             BD_Conect.AltaLista(self.TreeF_Cliente, self.ListF_Cliente, fila)
-    
+            
+    def FacturaCompleta(self,widget,data=None):
+        """ Crea la factura para el cliente
+        Necesita acceder a dos tablas (join), la propia de la factura y la tabla de servicios
+        para obtener los nombres de las comandas y precios, así genera los subtotales y totales.
+        Hay ajustes para una mejor alineacion de la presentacion
+        """
+        try:
+            model, iter = self.TreeF_Factura.get_selection().get_selected()
+            idfactura = model.get_value(iter,0)
+            cser = canvas.Canvas( str(idfactura) + '.pdf', pagesize=A4)
+            cabecera(cser) #creamos la cabecera y pie del documento (son otros módulos)
+            pie(cser)
+            bbdd.cur.execute('select idventa, s.servicio, cantidad, s.precio from comandas as c, servicios as s where c.idfactura = ? and s.Id = c.idservicio', (idfactura,))
+            listado = bbdd.cur.fetchall()
+            bbdd.conexion.commit()
+            textlistado = 'Factura'
+            cser.drawString(255, 705, textlistado)
+            cser.line(50, 700, 525, 700)
+            x = 50
+            y = 680
+            total = 0
+            for registro in listado:
+                for i in range(4):
+                    if i <= 1:
+                        cser.drawString(x, y, str(registro[i]))
+                        x = x + 40
+                        #para mejorar la alineaciones, es probar y probar
+                    else:
+                        x = x + 120
+                        #para mejorar la alineaciones, es probar y probar
+                        cser.drawString(x, y, str(registro[i]))
+                        var1 = int(registro[2])
+                        # numero de platos
+                        var2 = registro[3].split()[0] #precio plato le quito el símbolo €
+                        var2 = locale.atof(var2)
+                        var2 = round(float(var2), 2) #lo redondedo como float a dos decimales
+                        subtotal = var1*var2
+                        #precio lato por número de platos pedidos
+                        total = total + subtotal
+                        # cada pasada voy sumando
+                        subtotal = locale.currency(subtotal)
+                        #lo paso a moneda
+                        x = x + 120
+                        cser.drawString(x, y, str(subtotal))
+                        y = y - 20
+                        x = 50
+                        y = y -20
+                        #nuevo renglón o fila y vuelta a empezar
+                        cser.line(50, y, 525, y)
+                        y = y -20
+                        x = 400
+                        #probando y probando posiciones es una
+                        cser.drawString(x, y, 'Total: ')
+                        #cuestion de prueba y error
+                        x = 485
+                        total = round(float(total), 2)
+                        #voy situado el total de la factura
+                        total = locale.currency(total)
+                        cser.drawString(x,y,str(total))
+                        cser.showPage()
+                        cser.save()
+                        dir = os.getcwd()
+                        os.system('/usr/bin/xdg-open ' + dir + '/' + str(idfactura) + '.pdf')
+        except bbdd.sqlite3.OperationalError as e:
+            print(e)
+            bbdd.conexion.rollback()
+            print('error en factura')
+                            
 if __name__ == '__main__':
     main = Restaurante()
     Gtk.main()
