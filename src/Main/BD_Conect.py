@@ -43,6 +43,13 @@ def LoadFactFilter(IDMesa):
         print(e)
         Cone.rollback()
     return Curs
+def LoadFactFilterDNI(DNI):
+    try:
+        Curs.execute("SELECT F.IDFact,F.DNICliente,C.Nombre,F.IDMesa,F.Fecha FROM Factura AS F INNER JOIN Camarero AS C ON F.IDCam = C.IDCam WHERE DNICliente = '"+str(DNI)+"'")
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
+    return Curs
 def LoadFactLite(IDMesa):
     try:
         Curs.execute("SELECT * FROM Factura WHERE IDMesa = '"+str(IDMesa)+"'")
@@ -90,6 +97,21 @@ def SearchService(TEXT):
 def FindClient(DNI):
     try:
         Curs.execute("SELECT * FROM Cliente WHERE (DNI = '"+DNI+"')")
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
+    return Curs.fetchall()
+
+def LoadToFactura(IDF):
+    try:
+        Curs.execute('SELECT F.IDVenta, S.Servicio, F.Cantidad, S.PrecioUnidad FROM LineaFactura AS F INNER JOIN Servicio AS S ON S.IDServicio = F.IDServicio WHERE IDVenta = ', (IDF,))
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
+    return Curs.fetchall()
+def LoadToCabecera(idfactura):
+    try:
+        Curs.execute("SELECT Nombre from Camarero AS C INNER JOIN Factura AS F where F.IDFact = ? and C.IDCam = F.IDCam",(idfactura,))
     except sqlite3.OperationalError as e:
         print(e)
         Cone.rollback()
@@ -150,6 +172,7 @@ def Disocupped(ID):
 def DelClient(DNI):
     try:
         Curs.execute("DELETE FROM Cliente WHERE (DNI = '"+DNI+"')")
+        Cone.commit()
     except sqlite3.OperationalError as e:
         print(e)
         Cone.rollback()
@@ -175,7 +198,13 @@ def DelLF(IDF,IDS):
     except sqlite3.OperationalError as e:
         print(e)
         Cone.rollback()
- 
+def EraseService(ID):
+    try:
+        Curs.execute("DELETE FROM Servicios WHERE IDServicio = ",ID)
+        Cone.commit()
+    except sqlite3.OperationalError as e:
+        print(e)
+        Cone.rollback()
 def DROPALL():##Elimina todo el contenido de la BBDD
     try:
             Curs.execute("DELETE FROM Clientes")

@@ -2,6 +2,7 @@
 import gi
 import re
 import locale
+import os
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from Main import BD_Conect, BD_Prov
@@ -128,6 +129,7 @@ class Restaurante:
                 'on_BT_Conf_NO_clicked': self.ConfNO,
         ################ Añadir servicios ########################
                 'on_BT_NewService_clicked': self.NewService,
+                'on_BT_DelService_clicked': self.EraseService,
                 'on_BT_AddNS_clicked': self.AddNewService,
                 'on_BT_CancelNS_clicked':self.CancelAddNewService,
                 'on_BT_AddS_clicked': self.BuyService,
@@ -147,7 +149,8 @@ class Restaurante:
                 'on_TreeServicios_cursor_changed': self.ServieCursorSelection,
                 'on_EB_S_Searcher_button_release_event': self.ServiceSearch,
                 'on_EB_F_ClientSearch_key_release_event': self.FCliSearch,
-                'on_BT_Factura_clicked': self.FacturaCompleta,
+                'on_BT_Factura_clicked': self.crearfactura,
+                'on_Tree_F_Clientes_cursor_changed': self.FilterByDNI,
                 }
         
         Gra.connect_signals(dic)
@@ -180,12 +183,19 @@ class Restaurante:
     def ConfirmationRequested(self):
         if self.ID_Confirm == 1:
             self.LB_Confirm.set_text("¿Está seguro de que quiere borrar a este cliente?")
+        elif self.ID_Confirm == 2:
+            self.LB_Confirm.set_text("¿Está segudo de que quiere borrar este servicio?")
         self.VT_Conf.show
     def ConfYES(self,widget,data=None):
         if self.ID_Confirm == 1:
             Model, ID = self.TreeClientes.get_selection().get_selected()
             ResC = BD_Conect.DelClient(self.ListClientes.get_value(ID,0))
             self.LoadClientes()
+        elif self.ID_Confirm == 2:
+            model, iter = self.TreeServicios.get_selection().get_selected()
+            ID = model.get_value(iter,2)
+            BD_Conect.EraseService(ID)
+        self.ID_Confirm = 0
         self.VT_Conf.hide()
     def ConfNO(self,widget,data=None):
         self.VT_Conf.hide()
@@ -324,6 +334,7 @@ class Restaurante:
         BD_Prov.LoadCiu(self.ListCiu,self.CB_C_Provincia.get_active())
         
     def LoadS(self):
+        self.CursorServicesSelected = False
         self.ListServicios.clear()
         Res = BD_Conect.Load(2)
         for i in Res:
@@ -368,6 +379,15 @@ class Restaurante:
         model, iter = self.Tree_F_Mesas.get_selection().get_selected()
         ID = model.get_value(iter,0)
         Res = BD_Conect.LoadFactFilter(ID)
+        for i in Res:
+            file = (i[0],i[1],i[2],i[3],i[4])
+            BD_Conect.AltaLista(self.TreeF_Factura, self.ListF_Factura, file)
+            
+    def FilterByDNI(self,widget,data=None):
+        self.ListF_Factura.clear()
+        model, iter = self.TreeF_Cliente.get_selection().get_selected()
+        ID = model.get_value(iter,0)
+        Res = BD_Conect.LoadFactFilterDNI(ID)
         for i in Res:
             file = (i[0],i[1],i[2],i[3],i[4])
             BD_Conect.AltaLista(self.TreeF_Factura, self.ListF_Factura, file)
@@ -470,6 +490,14 @@ class Restaurante:
         self.EB_NSN.set_text("")
         self.EB_NSP.set_text("")
         self.VService.show()
+    def EraseService(self,widget,data=None):
+        model, iter = self.TreeServicios.get_selection().get_selected()
+        ID = model.get_value(iter,2)
+        if self.CursorServicesSelected == True:
+            self.ID_Confirm = 2
+            self.ConfirmationRequested()
+            
+        self.LoadS()
     def CancelAddNewService(self,widget,data=None):
         self.VService.hide()
     def AddNewService(self,widget,data=None):
@@ -530,25 +558,60 @@ class Restaurante:
         for i in ResCli:
             fila = (i[0],i[1],i[2],i[3],i[4],i[5])
             BD_Conect.AltaLista(self.TreeF_Cliente, self.ListF_Cliente, fila)
+        
             
-    def FacturaCompleta(self,widget,data=None):
-        """ Crea la factura para el cliente
-        Necesita acceder a dos tablas (join), la propia de la factura y la tabla de servicios
-        para obtener los nombres de las comandas y precios, así genera los subtotales y totales.
-        Hay ajustes para una mejor alineacion de la presentacion
+    def cabecera(self,cser,idfactura, dnicliente):
+        try:
+            cser.setTitle('Informes')
+            cser.setAuthor('Daniel Bastos Rodriguez')
+            cser.setFont('Helvetica', 11)
+    
+            cser.line(50, 820, 545, 820)
+            cser.line(50, 720, 545, 720)
+            cser.line(50, 700, 545, 700)
+            textnom = 'Restaurante Il Sicario'
+            textdir = 'Calle False 125- Springfield'
+            texttlfo = '666 66 66 66'
+            cser.drawCentredString(297.5, 795, textnom)
+            cser.drawCentredString(297.5, 775, textdir)
+            cser.drawCentredString(297.5, 755, texttlfo)
+            
+            camarero = BD_Conect.LoadToCabecera(idfactura)
+            cser.drawString(450, 745, "Le atendió: " + camarero[0][0])
+            cser.drawString(450, 730, "Cliente: " + dnicliente)
+        except:
+            print ('erros cabecera')
+    
+    def pie(self,cser):
+        """ Crea el pie del documento
+            El pie mostrará el agradecimiento al cliente
+            y la fecha de creación del documento y nº de pagina si fuese necesario
         """
+        try:
+            cser.line(50, 20, 525, 20)
+            textgracias = "Gracias por su visita"
+            cser.drawString(270, 10, textgracias)
+    
+        except:
+            print('erros pie')
+     
+    def crearfactura(self,widget,data=None):
         try:
             model, iter = self.TreeF_Factura.get_selection().get_selected()
             idfactura = model.get_value(iter,0)
-            cser = canvas.Canvas( str(idfactura) + '.pdf', pagesize=A4)
-            cabecera(cser) #creamos la cabecera y pie del documento (son otros módulos)
-            pie(cser)
-            bbdd.cur.execute('select idventa, s.servicio, cantidad, s.precio from comandas as c, servicios as s where c.idfactura = ? and s.Id = c.idservicio', (idfactura,))
-            listado = bbdd.cur.fetchall()
-            bbdd.conexion.commit()
-            textlistado = 'Factura'
-            cser.drawString(255, 705, textlistado)
-            cser.line(50, 700, 525, 700)
+            
+            model, iter = self.TreeF_Factura.get_selection().get_selected()
+            dnicliente = model.get_value(iter,1)
+            
+            cser = canvas.Canvas(str(idfactura) + '.pdf', pagesize=A4)
+    
+            self.cabecera(cser,idfactura,dnicliente)
+            self.pie(cser)
+            listado = BD_Conect.LoadToFactura(idfactura)
+    
+            textlistado = 'Cod       Concepto                              Unidades                        Precio/unidad                                  Total'
+            cser.drawString(50, 705, textlistado)
+            cser.line(50, 700, 545, 700)
             x = 50
             y = 680
             total = 0
@@ -557,46 +620,36 @@ class Restaurante:
                     if i <= 1:
                         cser.drawString(x, y, str(registro[i]))
                         x = x + 40
-                        #para mejorar la alineaciones, es probar y probar
                     else:
                         x = x + 120
-                        #para mejorar la alineaciones, es probar y probar
                         cser.drawString(x, y, str(registro[i]))
-                        var1 = int(registro[2])
-                        # numero de platos
-                        var2 = registro[3].split()[0] #precio plato le quito el símbolo €
-                        var2 = locale.atof(var2)
-                        var2 = round(float(var2), 2) #lo redondedo como float a dos decimales
-                        subtotal = var1*var2
-                        #precio lato por número de platos pedidos
-                        total = total + subtotal
-                        # cada pasada voy sumando
-                        subtotal = locale.currency(subtotal)
-                        #lo paso a moneda
-                        x = x + 120
-                        cser.drawString(x, y, str(subtotal))
-                        y = y - 20
-                        x = 50
-                        y = y -20
-                        #nuevo renglón o fila y vuelta a empezar
-                        cser.line(50, y, 525, y)
-                        y = y -20
-                        x = 400
-                        #probando y probando posiciones es una
-                        cser.drawString(x, y, 'Total: ')
-                        #cuestion de prueba y error
-                        x = 485
-                        total = round(float(total), 2)
-                        #voy situado el total de la factura
-                        total = locale.currency(total)
-                        cser.drawString(x,y,str(total))
-                        cser.showPage()
-                        cser.save()
-                        dir = os.getcwd()
-                        os.system('/usr/bin/xdg-open ' + dir + '/' + str(idfactura) + '.pdf')
-        except bbdd.sqlite3.OperationalError as e:
-            print(e)
-            bbdd.conexion.rollback()
+    
+    
+                    var1 = int(registro[2])
+                    var2 = registro[3]
+                    var2 = var2
+                    var2 = round(float(var2), 2)
+                    subtotal = var1*var2
+                total = total + subtotal
+                subtotal = locale.currency(subtotal)
+                x = x + 120
+                cser.drawRightString(545, y, str(subtotal))
+                y = y - 20
+                x = 50
+            y = y -20
+            cser.line(50, y, 545, y)
+            y = y -20
+            x = 400
+            cser.drawString(x, y, 'Total: ')
+            x = 485
+            total = round(float(total), 2)
+            total = locale.currency(total)
+            cser.drawString(x,y,str(total))
+            cser.showPage()
+            cser.save()
+            dir = os.getcwd()
+            os.system('/usr/bin/xdg-open ' + dir + '/' + str(idfactura) + '.pdf')
+        except:
             print('error en factura')
                             
 if __name__ == '__main__':
